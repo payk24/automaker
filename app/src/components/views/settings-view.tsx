@@ -28,6 +28,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { KeyboardMap, ShortcutReferencePanel } from "@/components/ui/keyboard-map";
+// Import custom hooks
+import { useCliStatus } from "./settings-view/hooks/use-cli-status";
 // Import extracted sections
 import { ApiKeysSection } from "./settings-view/api-keys/api-keys-section";
 import { ClaudeCliStatus } from "./settings-view/cli-status/claude-cli-status";
@@ -83,127 +85,20 @@ export function SettingsView() {
     }
   };
 
-  const [claudeCliStatus, setClaudeCliStatus] = useState<{
-    success: boolean;
-    status?: string;
-    method?: string;
-    version?: string;
-    path?: string;
-    recommendation?: string;
-    installCommands?: {
-      macos?: string;
-      windows?: string;
-      linux?: string;
-      npm?: string;
-    };
-    error?: string;
-  } | null>(null);
-
-  const [codexCliStatus, setCodexCliStatus] = useState<{
-    success: boolean;
-    status?: string;
-    method?: string;
-    version?: string;
-    path?: string;
-    hasApiKey?: boolean;
-    recommendation?: string;
-    installCommands?: {
-      macos?: string;
-      windows?: string;
-      linux?: string;
-      npm?: string;
-    };
-    error?: string;
-  } | null>(null);
+  // Use CLI status hook
+  const {
+    claudeCliStatus,
+    codexCliStatus,
+    isCheckingClaudeCli,
+    isCheckingCodexCli,
+    handleRefreshClaudeCli,
+    handleRefreshCodexCli,
+  } = useCliStatus();
 
   const [activeSection, setActiveSection] = useState("api-keys");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showKeyboardMapDialog, setShowKeyboardMapDialog] = useState(false);
-  const [isCheckingClaudeCli, setIsCheckingClaudeCli] = useState(false);
-  const [isCheckingCodexCli, setIsCheckingCodexCli] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const checkCliStatus = async () => {
-      const api = getElectronAPI();
-      if (api?.checkClaudeCli) {
-        try {
-          const status = await api.checkClaudeCli();
-          setClaudeCliStatus(status);
-        } catch (error) {
-          console.error("Failed to check Claude CLI status:", error);
-        }
-      }
-      if (api?.checkCodexCli) {
-        try {
-          const status = await api.checkCodexCli();
-          setCodexCliStatus(status);
-        } catch (error) {
-          console.error("Failed to check Codex CLI status:", error);
-        }
-      }
-
-      // Check Claude auth status (re-fetch on mount to ensure persistence)
-      if (api?.setup?.getClaudeStatus) {
-        try {
-          const result = await api.setup.getClaudeStatus();
-          if (result.success && result.auth) {
-            const auth = result.auth;
-            const authStatus = {
-              authenticated: auth.authenticated,
-              method:
-                auth.method === "oauth_token"
-                  ? "oauth" as const
-                  : auth.method?.includes("api_key")
-                  ? "api_key" as const
-                  : "none" as const,
-              hasCredentialsFile: auth.hasCredentialsFile ?? false,
-              oauthTokenValid: auth.hasStoredOAuthToken,
-              apiKeyValid: auth.hasStoredApiKey || auth.hasEnvApiKey,
-            };
-            setClaudeAuthStatus(authStatus);
-          }
-        } catch (error) {
-          console.error("Failed to check Claude auth status:", error);
-        }
-      }
-
-      // Check Codex auth status (re-fetch on mount to ensure persistence)
-      if (api?.setup?.getCodexStatus) {
-        try {
-          const result = await api.setup.getCodexStatus();
-          if (result.success && result.auth) {
-            const auth = result.auth;
-            // Determine method - prioritize cli_verified and cli_tokens over auth_file
-            const method =
-              auth.method === "cli_verified" || auth.method === "cli_tokens"
-                ? auth.method === "cli_verified"
-                  ? "cli_verified" as const
-                  : "cli_tokens" as const
-                : auth.method === "auth_file"
-                ? "api_key" as const
-                : auth.method === "env_var"
-                ? "env" as const
-                : "none" as const;
-
-            const authStatus = {
-              authenticated: auth.authenticated,
-              method,
-              // Only set apiKeyValid for actual API key methods, not CLI login
-              apiKeyValid:
-                method === "cli_verified" || method === "cli_tokens"
-                  ? undefined
-                  : auth.hasAuthFile || auth.hasEnvKey,
-            };
-            setCodexAuthStatus(authStatus);
-          }
-        } catch (error) {
-          console.error("Failed to check Codex auth status:", error);
-        }
-      }
-    };
-    checkCliStatus();
-  }, [setClaudeAuthStatus, setCodexAuthStatus]);
 
   // Track scroll position to highlight active nav item
   useEffect(() => {
@@ -264,36 +159,6 @@ export function SettingsView() {
         top: relativeTop - 24,
         behavior: "smooth",
       });
-    }
-  }, []);
-
-  const handleRefreshClaudeCli = useCallback(async () => {
-    setIsCheckingClaudeCli(true);
-    try {
-      const api = getElectronAPI();
-      if (api?.checkClaudeCli) {
-        const status = await api.checkClaudeCli();
-        setClaudeCliStatus(status);
-      }
-    } catch (error) {
-      console.error("Failed to refresh Claude CLI status:", error);
-    } finally {
-      setIsCheckingClaudeCli(false);
-    }
-  }, []);
-
-  const handleRefreshCodexCli = useCallback(async () => {
-    setIsCheckingCodexCli(true);
-    try {
-      const api = getElectronAPI();
-      if (api?.checkCodexCli) {
-        const status = await api.checkCodexCli();
-        setCodexCliStatus(status);
-      }
-    } catch (error) {
-      console.error("Failed to refresh Codex CLI status:", error);
-    } finally {
-      setIsCheckingCodexCli(false);
     }
   }, []);
 
