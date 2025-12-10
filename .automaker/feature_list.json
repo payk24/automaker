@@ -242,7 +242,7 @@
     "category": "Core",
     "description": "I want to have some abbility when executing a task on project to have some type of rewing / checkpoint system so if the changes made by agent in the project dont satisfy me / break something i can click in the ui to revert them. The best way for it would be to implement github worktress so when spin up new task claude take a look at it generate new branch that fit task issue and make it as gihub worktree then we would create a a new folder in project .automaker/worktree with branch name and clone of repo so agent can freely work one something like that ",
     "steps": [],
-    "status": "waiting_approval",
+    "status": "verified",
     "startedAt": "2025-12-10T11:11:06.115Z",
     "imagePaths": [],
     "skipTests": true,
@@ -255,12 +255,43 @@
     "category": "Kanban",
     "description": "When a agent is workig on task or when its in waiting approval column its would be nice to have some type of git diff panel and see what files got changed as well as reusing our custom themes we have in settings for the editor view of it take a look at codebase and create implementation for it",
     "steps": [],
-    "status": "waiting_approval",
+    "status": "verified",
     "startedAt": "2025-12-10T11:16:54.069Z",
     "imagePaths": [],
     "skipTests": true,
     "summary": "Added git diff panel for in-progress and waiting approval features. Created GitDiffPanel component with themed syntax highlighting. Modified: git-diff-panel.tsx (new), agent-output-modal.tsx, worktree-manager.js, auto-mode-service.js, main.js, preload.js, electron.d.ts. The panel shows changed files with +/- stats and expandable unified diff view using CSS theme variables.",
     "model": "opus",
     "thinkingLevel": "ultrathink"
+  },
+  {
+    "id": "feature-1765366278888-fobz39cc4",
+    "category": "Core",
+    "description": "Implement profile view and in the sidebar the profile view would allow user to defined different ai provider profiels like heavy-task would be claude opus model with ultrathink or debugging would be codex max. This will give user flexibillity in our model tab to quickly use own defined profiles preset of models.",
+    "steps": [],
+    "status": "waiting_approval",
+    "startedAt": "2025-12-10T11:31:20.842Z",
+    "imagePaths": [],
+    "skipTests": true,
+    "model": "opus",
+    "thinkingLevel": "high"
+  },
+  {
+    "id": "feature-1765367758697-ihrkgxiaq",
+    "category": "Kanban",
+    "description": "So we added ai profiles add a default option to setting view that would determinate to show only profiles fir a new feautre modal in modal tab instead of showing profiles + custom selection this functionallity will clean up model prompt when someone will rely on own profiles ",
+    "steps": [],
+    "status": "waiting_approval",
+    "startedAt": "2025-12-10T11:56:01.001Z",
+    "imagePaths": [
+      {
+        "id": "img-1765367746901-1n1jqfkej",
+        "path": "/Users/shirone/Library/Application Support/automaker/images/1765367746897-ymoyjh19i_SCR-20251210-lpki.png",
+        "filename": "SCR-20251210-lpki.png",
+        "mimeType": "image/png"
+      }
+    ],
+    "skipTests": true,
+    "model": "sonnet",
+    "thinkingLevel": "medium"
   }
 ]

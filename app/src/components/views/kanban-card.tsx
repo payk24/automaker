@@ -62,6 +62,12 @@ import {
   DEFAULT_MODEL,
 } from "@/lib/agent-context-parser";
 import { Markdown } from "@/components/ui/markdown";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface KanbanCardProps {
   feature: Feature;
@@ -259,23 +265,31 @@ export function KanbanCard({
       )}
       {/* Branch badge - show when feature has a worktree */}
       {hasWorktree && !isCurrentAutoTask && (
-        <div
-          className={cn(
-            "absolute px-1.5 py-0.5 text-[10px] font-medium rounded flex items-center gap-1 z-10",
-            "bg-purple-500/20 border border-purple-500/50 text-purple-400",
-            // Position below error badge if present, otherwise use normal position
-            feature.error || feature.skipTests
-              ? "top-8 left-2"
-              : shortcutKey
-                ? "top-2 left-10"
-                : "top-2 left-2"
-          )}
-          data-testid={`branch-badge-${feature.id}`}
-          title={`Branch: ${feature.branchName}`}
-        >
-          <GitBranch className="w-3 h-3" />
-          <span className="truncate max-w-[100px]">{feature.branchName?.replace("feature/", "")}</span>
-        </div>
+        <TooltipProvider delayDuration={300}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                className={cn(
+                  "absolute px-1.5 py-0.5 text-[10px] font-medium rounded flex items-center gap-1 z-10 cursor-default",
+                  "bg-purple-500/20 border border-purple-500/50 text-purple-400",
+                  // Position below error badge if present, otherwise use normal position
+                  feature.error || feature.skipTests
+                    ? "top-8 left-2"
+                    : shortcutKey
+                      ? "top-2 left-10"
+                      : "top-2 left-2"
+                )}
+                data-testid={`branch-badge-${feature.id}`}
+              >
+                <GitBranch className="w-3 h-3 shrink-0" />
+                <span className="truncate max-w-[80px]">{feature.branchName?.replace("feature/", "")}</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[300px]">
+              <p className="font-mono text-xs break-all">{feature.branchName}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       )}
       <CardHeader
         className={cn(
@@ -648,37 +662,44 @@ export function KanbanCard({
           )}
           {!isCurrentAutoTask && feature.status === "waiting_approval" && (
             <>
-              {/* Revert button - only show when worktree exists */}
+              {/* Revert button - only show when worktree exists (icon only to save space) */}
               {hasWorktree && onRevert && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/20"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsRevertDialogOpen(true);
-                  }}
-                  data-testid={`revert-${feature.id}`}
-                  title="Discard all changes and move back to backlog"
-                >
-                  <Undo2 className="w-3 h-3 mr-1" />
-                  Revert
-                </Button>
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/20 shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsRevertDialogOpen(true);
+                        }}
+                        data-testid={`revert-${feature.id}`}
+                      >
+                        <Undo2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>Revert changes</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
               {/* Follow-up prompt button */}
               {onFollowUp && (
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="flex-1 h-7 text-xs"
+                  className="flex-1 h-7 text-xs min-w-0"
                   onClick={(e) => {
                     e.stopPropagation();
                     onFollowUp();
                   }}
                   data-testid={`follow-up-${feature.id}`}
                 >
-                  <MessageSquare className="w-3 h-3 mr-1" />
-                  Follow-up
+                  <MessageSquare className="w-3 h-3 mr-1 shrink-0" />
+                  <span className="truncate">Follow-up</span>
                 </Button>
               )}
               {/* Merge button - only show when worktree exists */}
@@ -686,7 +707,7 @@ export function KanbanCard({
                 <Button
                   variant="default"
                   size="sm"
-                  className="flex-1 h-7 text-xs bg-purple-600 hover:bg-purple-700"
+                  className="flex-1 h-7 text-xs bg-purple-600 hover:bg-purple-700 min-w-0"
                   onClick={(e) => {
                     e.stopPropagation();
                     onMerge();
@@ -694,8 +715,8 @@ export function KanbanCard({
                   data-testid={`merge-${feature.id}`}
                   title="Merge changes into main branch"
                 >
-                  <GitMerge className="w-3 h-3 mr-1" />
-                  Merge
+                  <GitMerge className="w-3 h-3 mr-1 shrink-0" />
+                  <span className="truncate">Merge</span>
                 </Button>
               )}
               {/* Commit and verify button - show when no worktree */}
