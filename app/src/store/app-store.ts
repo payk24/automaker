@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Project } from "@/lib/electron";
+import type { Project, TrashedProject } from "@/lib/electron";
 
 export type ViewMode =
   | "welcome"
@@ -93,6 +93,7 @@ export interface AppState {
   // Project state
   projects: Project[];
   currentProject: Project | null;
+  trashedProjects: TrashedProject[];
 
   // View state
   currentView: ViewMode;
@@ -155,6 +156,10 @@ export interface AppActions {
   setProjects: (projects: Project[]) => void;
   addProject: (project: Project) => void;
   removeProject: (projectId: string) => void;
+  moveProjectToTrash: (projectId: string) => void;
+  restoreTrashedProject: (projectId: string) => void;
+  deleteTrashedProject: (projectId: string) => void;
+  emptyTrash: () => void;
   setCurrentProject: (project: Project | null) => void;
   reorderProjects: (oldIndex: number, newIndex: number) => void;
 
@@ -217,6 +222,7 @@ export interface AppActions {
 const initialState: AppState = {
   projects: [],
   currentProject: null,
+  trashedProjects: [],
   currentView: "welcome",
   sidebarOpen: true,
   theme: "dark",
@@ -269,6 +275,82 @@ export const useAppStore = create<AppState & AppActions>()(
       removeProject: (projectId) => {
         set({ projects: get().projects.filter((p) => p.id !== projectId) });
       },
+
+      moveProjectToTrash: (projectId) => {
+        const project = get().projects.find((p) => p.id === projectId);
+        if (!project) return;
+
+        const remainingProjects = get().projects.filter(
+          (p) => p.id !== projectId
+        );
+        const existingTrash = get().trashedProjects.filter(
+          (p) => p.id !== projectId
+        );
+        const trashedProject: TrashedProject = {
+          ...project,
+          trashedAt: new Date().toISOString(),
+          deletedFromDisk: false,
+        };
+
+        const isCurrent = get().currentProject?.id === projectId;
+
+        set({
+          projects: remainingProjects,
+          trashedProjects: [trashedProject, ...existingTrash],
+          currentProject: isCurrent ? null : get().currentProject,
+          currentView: isCurrent ? "welcome" : get().currentView,
+        });
+      },
+
+      restoreTrashedProject: (projectId) => {
+        const trashed = get().trashedProjects.find((p) => p.id === projectId);
+        if (!trashed) return;
+
+        const remainingTrash = get().trashedProjects.filter(
+          (p) => p.id !== projectId
+        );
+        const existingProjects = get().projects;
+        const samePathProject = existingProjects.find(
+          (p) => p.path === trashed.path
+        );
+        const projectsWithoutId = existingProjects.filter(
+          (p) => p.id !== projectId
+        );
+
+        // If a project with the same path already exists, keep it and just remove from trash
+        if (samePathProject) {
+          set({
+            trashedProjects: remainingTrash,
+            currentProject: samePathProject,
+            currentView: "board",
+          });
+          return;
+        }
+
+        const restoredProject: Project = {
+          id: trashed.id,
+          name: trashed.name,
+          path: trashed.path,
+          lastOpened: new Date().toISOString(),
+        };
+
+        set({
+          trashedProjects: remainingTrash,
+          projects: [...projectsWithoutId, restoredProject],
+          currentProject: restoredProject,
+          currentView: "board",
+        });
+      },
+
+      deleteTrashedProject: (projectId) => {
+        set({
+          trashedProjects: get().trashedProjects.filter(
+            (p) => p.id !== projectId
+          ),
+        });
+      },
+
+      emptyTrash: () => set({ trashedProjects: [] }),
 
       reorderProjects: (oldIndex, newIndex) => {
         const projects = [...get().projects];
@@ -496,6 +578,7 @@ export const useAppStore = create<AppState & AppActions>()(
       partialize: (state) => ({
         projects: state.projects,
         currentProject: state.currentProject,
+        trashedProjects: state.trashedProjects,
         currentView: state.currentView,
         theme: state.theme,
         sidebarOpen: state.sidebarOpen,

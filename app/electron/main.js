@@ -3,7 +3,7 @@ const path = require("path");
 // Load environment variables from .env file
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
 
-const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
 const fs = require("fs/promises");
 const agentService = require("./agent-service");
 const autoModeService = require("./auto-mode-service");
@@ -163,6 +163,15 @@ ipcMain.handle("fs:stat", async (_, filePath) => {
 ipcMain.handle("fs:deleteFile", async (_, filePath) => {
   try {
     await fs.unlink(filePath);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle("fs:trashItem", async (_, targetPath) => {
+  try {
+    await shell.trashItem(targetPath);
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };

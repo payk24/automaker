@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
-import Link from "next/link";
 import {
   FolderOpen,
   Plus,
@@ -23,13 +22,25 @@ import {
   Check,
   BookOpen,
   GripVertical,
+  Trash2,
+  Undo2,
 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import {
   useKeyboardShortcuts,
   NAV_SHORTCUTS,
@@ -37,7 +48,7 @@ import {
   ACTION_SHORTCUTS,
   KeyboardShortcut,
 } from "@/hooks/use-keyboard-shortcuts";
-import { getElectronAPI, Project } from "@/lib/electron";
+import { getElectronAPI, Project, TrashedProject } from "@/lib/electron";
 import { initializeProject } from "@/lib/project-init";
 import { toast } from "sonner";
 import {
@@ -73,6 +84,7 @@ interface SortableProjectItemProps {
   index: number;
   currentProjectId: string | undefined;
   onSelect: (project: Project) => void;
+  onTrash: (project: Project) => void;
 }
 
 function SortableProjectItem({
@@ -80,6 +92,7 @@ function SortableProjectItem({
   index,
   currentProjectId,
   onSelect,
+  onTrash,
 }: SortableProjectItemProps) {
   const {
     attributes,
@@ -138,6 +151,19 @@ function SortableProjectItem({
           <Check className="h-4 w-4 text-brand-500 shrink-0" />
         )}
       </div>
+
+      {/* Move to trash */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onTrash(project);
+        }}
+        className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+        title="Move to Trash"
+        data-testid={`project-trash-${project.id}`}
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }
@@ -145,6 +171,7 @@ function SortableProjectItem({
 export function Sidebar() {
   const {
     projects,
+    trashedProjects,
     currentProject,
     currentView,
     sidebarOpen,
@@ -152,12 +179,18 @@ export function Sidebar() {
     setCurrentProject,
     setCurrentView,
     toggleSidebar,
-    removeProject,
+    moveProjectToTrash,
+    restoreTrashedProject,
+    deleteTrashedProject,
+    emptyTrash,
     reorderProjects,
   } = useAppStore();
 
   // State for project picker dropdown
   const [isProjectPickerOpen, setIsProjectPickerOpen] = useState(false);
+  const [showTrashDialog, setShowTrashDialog] = useState(false);
+  const [activeTrashId, setActiveTrashId] = useState<string | null>(null);
+  const [isEmptyingTrash, setIsEmptyingTrash] = useState(false);
 
   // Sensors for drag-and-drop
   const sensors = useSensors(
@@ -238,6 +271,89 @@ export function Sidebar() {
       }
     }
   }, [addProject, setCurrentProject]);
+
+  const handleTrashProject = useCallback(
+    (project: Project) => {
+      const confirmed = window.confirm(
+        `Move "${project.name}" to Trash?\nThe folder stays on disk until you delete it from Trash.`
+      );
+      if (!confirmed) return;
+
+      moveProjectToTrash(project.id);
+      setIsProjectPickerOpen(false);
+      toast.success("Project moved to Trash", {
+        description: `${project.name} was removed from the sidebar.`,
+      });
+    },
+    [moveProjectToTrash]
+  );
+
+  const handleRestoreProject = useCallback(
+    (projectId: string) => {
+      restoreTrashedProject(projectId);
+      toast.success("Project restored", {
+        description: "Added back to your project list.",
+      });
+      setShowTrashDialog(false);
+    },
+    [restoreTrashedProject]
+  );
+
+  const handleDeleteProjectFromDisk = useCallback(
+    async (trashedProject: TrashedProject) => {
+      const confirmed = window.confirm(
+        `Delete "${trashedProject.name}" from disk?\nThis sends the folder to your system Trash.`
+      );
+      if (!confirmed) return;
+
+      setActiveTrashId(trashedProject.id);
+      try {
+        const api = getElectronAPI();
+        if (!api.trashItem) {
+          throw new Error("System Trash is not available in this build.");
+        }
+
+        const result = await api.trashItem(trashedProject.path);
+        if (!result.success) {
+          throw new Error(result.error || "Failed to delete project folder");
+        }
+
+        deleteTrashedProject(trashedProject.id);
+        toast.success("Project folder sent to system Trash", {
+          description: trashedProject.path,
+        });
+      } catch (error) {
+        console.error("[Sidebar] Failed to delete project from disk:", error);
+        toast.error("Failed to delete project folder", {
+          description: error instanceof Error ? error.message : "Unknown error",
+        });
+      } finally {
+        setActiveTrashId(null);
+      }
+    },
+    [deleteTrashedProject]
+  );
+
+  const handleEmptyTrash = useCallback(() => {
+    if (trashedProjects.length === 0) {
+      setShowTrashDialog(false);
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Clear all trashed projects from Automaker? This does not delete folders from disk."
+    );
+    if (!confirmed) return;
+
+    setIsEmptyingTrash(true);
+    try {
+      emptyTrash();
+      toast.success("Trash cleared");
+      setShowTrashDialog(false);
+    } finally {
+      setIsEmptyingTrash(false);
+    }
+  }, [emptyTrash, trashedProjects.length]);
 
   const navSections: NavSection[] = [
     {
@@ -530,10 +646,23 @@ export function Sidebar() {
                           setCurrentProject(p);
                           setIsProjectPickerOpen(false);
                         }}
+                        onTrash={handleTrashProject}
                       />
                     ))}
                   </SortableContext>
                 </DndContext>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    setShowTrashDialog(true);
+                  }}
+                  className="text-destructive focus:text-destructive"
+                  data-testid="manage-trash"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Manage Trash ({trashedProjects.length})
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -638,8 +767,38 @@ export function Sidebar() {
 
       {/* Bottom Section - User / Settings */}
       <div className="border-t border-sidebar-border bg-sidebar-accent/10 shrink-0">
-        {/* Settings Link */}
+        {/* Trash + Settings Links */}
         <div className="p-2">
+          <button
+            onClick={() => setShowTrashDialog(true)}
+            className={cn(
+              "group flex items-center w-full px-2 lg:px-3 py-2.5 rounded-lg relative overflow-hidden transition-all titlebar-no-drag mb-2",
+              "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50",
+              sidebarOpen ? "justify-start" : "justify-center"
+            )}
+            title={!sidebarOpen ? "Trash" : undefined}
+            data-testid="trash-button"
+          >
+            <Trash2 className="w-4 h-4 shrink-0 transition-colors group-hover:text-destructive" />
+            <span
+              className={cn(
+                "ml-2.5 font-medium text-sm flex-1",
+                sidebarOpen ? "hidden lg:block" : "hidden"
+              )}
+            >
+              Trash
+            </span>
+            {trashedProjects.length > 0 && sidebarOpen && (
+              <span className="hidden lg:flex items-center justify-center min-w-[20px] px-1 h-5 text-[10px] font-mono rounded bg-destructive/10 border border-destructive/20 text-destructive">
+                {trashedProjects.length}
+              </span>
+            )}
+            {!sidebarOpen && (
+              <span className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 border border-border">
+                Trash ({trashedProjects.length})
+              </span>
+            )}
+          </button>
           <button
             onClick={() => setCurrentView("settings")}
             className={cn(
@@ -691,6 +850,91 @@ export function Sidebar() {
           </button>
         </div>
       </div>
+      <Dialog open={showTrashDialog} onOpenChange={setShowTrashDialog}>
+        <DialogContent className="bg-popover border-border max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Trash</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Restore projects to the sidebar or delete their folders using your
+              system Trash.
+            </DialogDescription>
+          </DialogHeader>
+
+          {trashedProjects.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Trash is empty.</p>
+          ) : (
+            <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+              {trashedProjects.map((project) => (
+                <div
+                  key={project.id}
+                  className="flex items-start justify-between gap-3 rounded-md border border-sidebar-border bg-sidebar-accent/20 p-3"
+                >
+                  <div className="space-y-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {project.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground break-all">
+                      {project.path}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground/80">
+                      Trashed {new Date(project.trashedAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleRestoreProject(project.id)}
+                      data-testid={`restore-project-${project.id}`}
+                    >
+                      <Undo2 className="h-3.5 w-3.5 mr-1.5" />
+                      Restore
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleDeleteProjectFromDisk(project)}
+                      disabled={activeTrashId === project.id}
+                      data-testid={`delete-project-disk-${project.id}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                      {activeTrashId === project.id
+                        ? "Deleting..."
+                        : "Delete from disk"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-muted-foreground hover:text-foreground"
+                      onClick={() => deleteTrashedProject(project.id)}
+                      data-testid={`remove-project-${project.id}`}
+                    >
+                      <X className="h-3.5 w-3.5 mr-1.5" />
+                      Remove from list
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <DialogFooter className="flex justify-between">
+            <Button variant="ghost" onClick={() => setShowTrashDialog(false)}>
+              Close
+            </Button>
+            {trashedProjects.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={handleEmptyTrash}
+                disabled={isEmptyingTrash}
+                data-testid="empty-trash"
+              >
+                {isEmptyingTrash ? "Clearing..." : "Empty Trash"}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </aside>
   );
 }
