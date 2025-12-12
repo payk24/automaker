@@ -1,5 +1,5 @@
 {
-  "name": "automaker",
+  "name": "@automaker/app",
   "version": "0.1.0",
   "description": "An autonomous AI development studio that helps you build software faster using AI-powered agents",
   "homepage": "https://github.com/AutoMaker-Org/automaker",

@@ -38,29 +38,29 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: app/package-lock.json
+          cache-dependency-path: apps/app/package-lock.json
 
       - name: Install dependencies
-        working-directory: ./app
+        working-directory: ./apps/app
         run: npm ci
 
       - name: Build Electron App (macOS)
         if: matrix.os == 'macos-latest'
-        working-directory: ./app
+        working-directory: ./apps/app
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build:electron -- --mac --x64 --arm64
 
       - name: Build Electron App (Windows)
         if: matrix.os == 'windows-latest'
-        working-directory: ./app
+        working-directory: ./apps/app
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build:electron -- --win --x64
 
       - name: Build Electron App (Linux)
         if: matrix.os == 'ubuntu-latest'
-        working-directory: ./app
+        working-directory: ./apps/app
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build:electron -- --linux --x64
@@ -70,12 +70,12 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.version || github.ref_name }}
           files: |
-            app/dist/*.exe
-            app/dist/*.dmg
-            app/dist/*.AppImage
-            app/dist/*.zip
-            app/dist/*.deb
-            app/dist/*.rpm
+            apps/app/dist/*.exe
+            apps/app/dist/*.dmg
+            apps/app/dist/*.AppImage
+            apps/app/dist/*.zip
+            apps/app/dist/*.deb
+            apps/app/dist/*.rpm
           draft: false
           prerelease: false
         env:

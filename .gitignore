@@ -1,2 +1,9 @@
-﻿#added by trueheads > will remove once supercombo adds multi-os support
+#added by trueheads > will remove once supercombo adds multi-os support
 launch.sh
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.next/

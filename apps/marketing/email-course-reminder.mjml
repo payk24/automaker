@@ -1,0 +1,69 @@
+<mjml>
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-image
+          width="100px"
+          src="https://webdevcody.com/_next/image?url=%2Fwdc.jpeg&w=96&q=75"
+        ></mj-image>
+
+        <mj-divider border-color="#F45E43"></mj-divider>
+
+        <mj-text font-size="20px" color="#F45E43" font-family="helvetica">
+          Hey coders!
+        </mj-text>
+
+        <mj-text font-size="16px" font-family="helvetica">
+          Just a friendly reminder — Agentic Jumpstart is here, and it's your
+          chance to become an expert Agentic coder!
+        </mj-text>
+
+        <mj-text font-size="14px" font-family="helvetica">
+          If you haven't checked it out yet, now's the time. This course will
+          teach you everything you need to know about building with AI agents
+          and creating powerful, autonomous systems.
+        </mj-text>
+
+        <mj-text
+          font-size="14px"
+          font-family="helvetica"
+          color="#F45E43"
+          font-weight="bold"
+        >
+          ⚠️ Important: The price will be going back up soon!
+        </mj-text>
+
+        <mj-text font-size="14px" font-family="helvetica">
+          You're on this list because you showed early interest, and I want to
+          make sure you don't miss out on the current pricing. Once the price
+          increases, you'll need to pay the full amount.
+        </mj-text>
+
+        <mj-button
+          background-color="#F45E43"
+          color="white"
+          href="https://agenticjumpstart.com"
+          font-size="16px"
+          padding="20px"
+        >
+          Get the course now
+        </mj-button>
+
+        <mj-text font-size="14px" font-family="helvetica">
+          Don't wait — secure your spot at the current price before it's too
+          late!
+        </mj-text>
+
+        <mj-text font-size="14px" font-family="helvetica">
+          If you have questions or want to share feedback, just hit reply — I'd
+          love to hear from you.
+        </mj-text>
+
+        <mj-text font-size="14px" font-family="helvetica">
+          Thanks for being here,<br />
+          Cody
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
