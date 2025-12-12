@@ -217,6 +217,113 @@ export function createFsRoutes(_events: EventEmitter): Router {
     }
   });
 
+  // Resolve directory path from directory name and file structure
+  // Used when browser file picker only provides directory name (not full path)
+  router.post("/resolve-directory", async (req: Request, res: Response) => {
+    try {
+      const { directoryName, sampleFiles, fileCount } = req.body as {
+        directoryName: string;
+        sampleFiles?: string[];
+        fileCount?: number;
+      };
+
+      if (!directoryName) {
+        res.status(400).json({ success: false, error: "directoryName is required" });
+        return;
+      }
+
+      // If directoryName looks like an absolute path, try validating it directly
+      if (path.isAbsolute(directoryName) || directoryName.includes(path.sep)) {
+        try {
+          const resolvedPath = path.resolve(directoryName);
+          const stats = await fs.stat(resolvedPath);
+          if (stats.isDirectory()) {
+            addAllowedPath(resolvedPath);
+            return res.json({
+              success: true,
+              path: resolvedPath,
+            });
+          }
+        } catch {
+          // Not a valid absolute path, continue to search
+        }
+      }
+
+      // Search for directory in common locations
+      const searchPaths: string[] = [
+        process.cwd(), // Current working directory
+        process.env.HOME || process.env.USERPROFILE || "", // User home
+        path.join(process.env.HOME || process.env.USERPROFILE || "", "Documents"),
+        path.join(process.env.HOME || process.env.USERPROFILE || "", "Desktop"),
+        // Common project locations
+        path.join(process.env.HOME || process.env.USERPROFILE || "", "Projects"),
+      ].filter(Boolean);
+
+      // Also check parent of current working directory
+      try {
+        const parentDir = path.dirname(process.cwd());
+        if (!searchPaths.includes(parentDir)) {
+          searchPaths.push(parentDir);
+        }
+      } catch {
+        // Ignore
+      }
+
+      // Search for directory matching the name and file structure
+      for (const searchPath of searchPaths) {
+        try {
+          const candidatePath = path.join(searchPath, directoryName);
+          const stats = await fs.stat(candidatePath);
+          
+          if (stats.isDirectory()) {
+            // Verify it matches by checking for sample files
+            if (sampleFiles && sampleFiles.length > 0) {
+              let matches = 0;
+              for (const sampleFile of sampleFiles.slice(0, 5)) {
+                // Remove directory name prefix from sample file path
+                const relativeFile = sampleFile.startsWith(directoryName + "/")
+                  ? sampleFile.substring(directoryName.length + 1)
+                  : sampleFile.split("/").slice(1).join("/") || sampleFile.split("/").pop() || sampleFile;
+                
+                try {
+                  const filePath = path.join(candidatePath, relativeFile);
+                  await fs.access(filePath);
+                  matches++;
+                } catch {
+                  // File doesn't exist, continue checking
+                }
+              }
+              
+              // If at least one file matches, consider it a match
+              if (matches === 0 && sampleFiles.length > 0) {
+                continue; // Try next candidate
+              }
+            }
+
+            // Found matching directory
+            addAllowedPath(candidatePath);
+            return res.json({
+              success: true,
+              path: candidatePath,
+            });
+          }
+        } catch {
+          // Directory doesn't exist at this location, continue searching
+          continue;
+        }
+      }
+
+      // Directory not found
+      res.status(404).json({
+        success: false,
+        error: `Directory "${directoryName}" not found in common locations. Please ensure the directory exists.`,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ success: false, error: message });
+    }
+  });
+
   // Save image to .automaker/images directory
   router.post("/save-image", async (req: Request, res: Response) => {
     try {
