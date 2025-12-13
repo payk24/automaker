@@ -55,6 +55,16 @@ export function createTemplatesRoutes(): Router {
       // Build full project path
       const projectPath = path.join(parentDir, sanitizedName);
 
+      const resolvedParent = path.resolve(parentDir);
+      const resolvedProject = path.resolve(projectPath);
+      const relativePath = path.relative(resolvedParent, resolvedProject);
+      if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid project name; potential path traversal attempt.",
+        });
+      }
+
       // Check if directory already exists
       try {
         await fs.access(projectPath);

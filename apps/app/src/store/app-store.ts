@@ -416,6 +416,11 @@ export interface AppActions {
   deleteTrashedProject: (projectId: string) => void;
   emptyTrash: () => void;
   setCurrentProject: (project: Project | null) => void;
+  upsertAndSetCurrentProject: (
+    path: string,
+    name: string,
+    theme?: ThemeMode
+  ) => Project; // Upsert project by path and set as current
   reorderProjects: (oldIndex: number, newIndex: number) => void;
   cyclePrevProject: () => void; // Cycle back through project history (Q)
   cycleNextProject: () => void; // Cycle forward through project history (E)
@@ -765,6 +770,58 @@ export const useAppStore = create<AppState & AppActions>()(
         } else {
           set({ currentView: "welcome" });
         }
+      },
+
+      upsertAndSetCurrentProject: (path, name, theme) => {
+        const {
+          projects,
+          trashedProjects,
+          currentProject,
+          theme: globalTheme,
+        } = get();
+        const existingProject = projects.find((p) => p.path === path);
+        let project: Project;
+
+        if (existingProject) {
+          // Update existing project, preserving theme and other properties
+          project = {
+            ...existingProject,
+            name, // Update name in case it changed
+            lastOpened: new Date().toISOString(),
+          };
+          // Update the project in the store
+          const updatedProjects = projects.map((p) =>
+            p.id === existingProject.id ? project : p
+          );
+          set({ projects: updatedProjects });
+        } else {
+          // Create new project - check for trashed project with same path first (preserves theme if deleted/recreated)
+          // Then fall back to provided theme, then current project theme, then global theme
+          const trashedProject = trashedProjects.find((p) => p.path === path);
+          const effectiveTheme =
+            theme ||
+            trashedProject?.theme ||
+            currentProject?.theme ||
+            globalTheme;
+          project = {
+            id: `project-${Date.now()}`,
+            name,
+            path,
+            lastOpened: new Date().toISOString(),
+            theme: effectiveTheme,
+          };
+          // Add the new project to the store
+          set({
+            projects: [
+              ...projects,
+              { ...project, lastOpened: new Date().toISOString() },
+            ],
+          });
+        }
+
+        // Set as current project (this will also update history and view)
+        get().setCurrentProject(project);
+        return project;
       },
 
       cyclePrevProject: () => {
@@ -1222,7 +1279,9 @@ export const useAppStore = create<AppState & AppActions>()(
         const current = get().lastSelectedSessionByProject;
         if (sessionId === null) {
           // Remove the entry for this project
-          const { [projectPath]: _, ...rest } = current;
+          const rest = Object.fromEntries(
+            Object.entries(current).filter(([key]) => key !== projectPath)
+          );
           set({ lastSelectedSessionByProject: rest });
         } else {
           set({

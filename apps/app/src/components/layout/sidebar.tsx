@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { useAppStore, formatShortcut } from "@/store/app-store";
+import { useAppStore, formatShortcut, type ThemeMode } from "@/store/app-store";
 import { CoursePromoBadge } from "@/components/ui/course-promo-badge";
 import { IS_MARKETING } from "@/config/app-config";
 import {
@@ -188,7 +188,7 @@ export function Sidebar() {
     currentView,
     sidebarOpen,
     projectHistory,
-    addProject,
+    upsertAndSetCurrentProject,
     setCurrentProject,
     setCurrentView,
     toggleSidebar,
@@ -473,39 +473,14 @@ export function Sidebar() {
           return;
         }
 
-        // Check if project already exists (by path) to preserve theme and other settings
-        const existingProject = projects.find((p) => p.path === path);
-
-        let project: Project;
-        if (existingProject) {
-          // Update existing project, preserving theme and other properties
-          project = {
-            ...existingProject,
-            name, // Update name in case it changed
-            lastOpened: new Date().toISOString(),
-          };
-          // Update the project in the store (this will update the existing entry)
-          const updatedProjects = projects.map((p) =>
-            p.id === existingProject.id ? project : p
-          );
-          useAppStore.setState({ projects: updatedProjects });
-        } else {
-          // Create new project - check for trashed project with same path first (preserves theme if deleted/recreated)
-          // Then fall back to current effective theme, then global theme
-          const trashedProject = trashedProjects.find((p) => p.path === path);
-          const effectiveTheme =
-            trashedProject?.theme || currentProject?.theme || globalTheme;
-          project = {
-            id: `project-${Date.now()}`,
-            name,
-            path,
-            lastOpened: new Date().toISOString(),
-            theme: effectiveTheme,
-          };
-          addProject(project);
-        }
-
-        setCurrentProject(project);
+        // Upsert project and set as current (handles both create and update cases)
+        // Theme preservation is handled by the store action
+        const trashedProject = trashedProjects.find((p) => p.path === path);
+        const effectiveTheme =
+          (trashedProject?.theme as ThemeMode | undefined) ||
+          (currentProject?.theme as ThemeMode | undefined) ||
+          globalTheme;
+        const project = upsertAndSetCurrentProject(path, name, effectiveTheme);
 
         // Check if app_spec.txt exists
         const specExists = await hasAppSpec(path);
@@ -540,10 +515,8 @@ export function Sidebar() {
       }
     }
   }, [
-    projects,
     trashedProjects,
-    addProject,
-    setCurrentProject,
+    upsertAndSetCurrentProject,
     currentProject,
     globalTheme,
   ]);

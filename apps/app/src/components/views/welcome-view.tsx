@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useAppStore } from "@/store/app-store";
+import { useAppStore, type ThemeMode } from "@/store/app-store";
 import { getElectronAPI, type Project } from "@/lib/electron";
 import { initializeProject } from "@/lib/project-init";
 import {
@@ -36,8 +36,14 @@ import { getHttpApiClient } from "@/lib/http-api-client";
 import type { StarterTemplate } from "@/lib/templates";
 
 export function WelcomeView() {
-  const { projects, addProject, setCurrentProject, setCurrentView } =
-    useAppStore();
+  const {
+    projects,
+    trashedProjects,
+    currentProject,
+    upsertAndSetCurrentProject,
+    setCurrentView,
+    theme: globalTheme,
+  } = useAppStore();
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
@@ -98,35 +104,14 @@ export function WelcomeView() {
           return;
         }
 
-        // Check if project already exists (by path) to preserve theme and other settings
-        const existingProject = projects.find((p) => p.path === path);
-
-        let project: Project;
-        if (existingProject) {
-          // Update existing project, preserving theme and other properties
-          project = {
-            ...existingProject,
-            name, // Update name in case it changed
-            lastOpened: new Date().toISOString(),
-          };
-          // Update the project in the store (this will update the existing entry)
-          const updatedProjects = projects.map((p) =>
-            p.id === existingProject.id ? project : p
-          );
-          // We need to manually update projects since addProject would create a duplicate
-          useAppStore.setState({ projects: updatedProjects });
-        } else {
-          // Create new project
-          project = {
-            id: `project-${Date.now()}`,
-            name,
-            path,
-            lastOpened: new Date().toISOString(),
-          };
-          addProject(project);
-        }
-
-        setCurrentProject(project);
+        // Upsert project and set as current (handles both create and update cases)
+        // Theme preservation is handled by the store action
+        const trashedProject = trashedProjects.find((p) => p.path === path);
+        const effectiveTheme =
+          (trashedProject?.theme as ThemeMode | undefined) ||
+          (currentProject?.theme as ThemeMode | undefined) ||
+          globalTheme;
+        const project = upsertAndSetCurrentProject(path, name, effectiveTheme);
 
         // Show initialization dialog if files were created
         if (initResult.createdFiles && initResult.createdFiles.length > 0) {
@@ -161,7 +146,13 @@ export function WelcomeView() {
         setIsOpening(false);
       }
     },
-    [projects, addProject, setCurrentProject, analyzeProject]
+    [
+      trashedProjects,
+      currentProject,
+      globalTheme,
+      upsertAndSetCurrentProject,
+      analyzeProject,
+    ]
   );
 
   const handleOpenProject = useCallback(async () => {
