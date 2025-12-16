@@ -268,6 +268,52 @@ export function DescriptionImageDropZone({
     [images, onImagesChange]
   );
 
+  // Handle paste events to detect and process images from clipboard
+  // Works across all OS (Windows, Linux, macOS)
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      if (disabled || isProcessing) return;
+
+      const clipboardItems = e.clipboardData?.items;
+      if (!clipboardItems) return;
+
+      const imageFiles: File[] = [];
+
+      // Iterate through clipboard items to find images
+      for (let i = 0; i < clipboardItems.length; i++) {
+        const item = clipboardItems[i];
+
+        // Check if the item is an image
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) {
+            // Generate a filename for pasted images since they don't have one
+            const extension = item.type.split("/")[1] || "png";
+            const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+            const renamedFile = new File(
+              [file],
+              `pasted-image-${timestamp}.${extension}`,
+              { type: file.type }
+            );
+            imageFiles.push(renamedFile);
+          }
+        }
+      }
+
+      // If we found images, process them and prevent default paste behavior
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+
+        // Create a FileList-like object from the array
+        const dataTransfer = new DataTransfer();
+        imageFiles.forEach((file) => dataTransfer.items.add(file));
+        processFiles(dataTransfer.files);
+      }
+      // If no images found, let the default paste behavior happen (paste text)
+    },
+    [disabled, isProcessing, processFiles]
+  );
+
   return (
     <div className={cn("relative", className)}>
       {/* Hidden file input */}
@@ -313,6 +359,7 @@ export function DescriptionImageDropZone({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onPaste={handlePaste}
           disabled={disabled}
           autoFocus={autoFocus}
           aria-invalid={error}
@@ -326,7 +373,7 @@ export function DescriptionImageDropZone({
 
       {/* Hint text */}
       <p className="text-xs text-muted-foreground mt-1">
-        Drag and drop images here or{" "}
+        Paste, drag and drop images, or{" "}
         <button
           type="button"
           onClick={handleBrowseClick}
