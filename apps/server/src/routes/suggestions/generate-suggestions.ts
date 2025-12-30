@@ -202,6 +202,7 @@ ${JSON.stringify(suggestionsSchema, null, 2)}`;
       maxTurns: 250,
       allowedTools: ['Read', 'Glob', 'Grep'],
       abortController,
+      readOnly: true, // Suggestions only reads code, doesn't write
     })) {
       if (msg.type === 'assistant' && msg.message?.content) {
         for (const block of msg.message.content) {

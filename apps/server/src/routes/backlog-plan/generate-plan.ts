@@ -183,6 +183,7 @@ Please analyze the current backlog and the user's request, then provide a JSON p
       allowedTools: [], // No tools needed for this
       abortController,
       settingSources: autoLoadClaudeMd ? ['user', 'project'] : undefined,
+      readOnly: true, // Plan generation only generates text, doesn't write files
     });
 
     let responseText = '';

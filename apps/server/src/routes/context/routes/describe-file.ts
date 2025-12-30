@@ -207,6 +207,7 @@ File: ${fileName}${truncated ? ' (truncated)' : ''}`;
           cwd,
           maxTurns: 1,
           allowedTools: [],
+          readOnly: true, // File description only reads, doesn't write
         })) {
           if (msg.type === 'assistant' && msg.message?.content) {
             for (const block of msg.message.content) {

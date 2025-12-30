@@ -97,6 +97,7 @@ async function executeWithCursor(prompt: string, model: string): Promise<string>
     prompt,
     model,
     cwd: process.cwd(), // Enhancement doesn't need a specific working directory
+    readOnly: true, // Prompt enhancement only generates text, doesn't write files
   })) {
     if (msg.type === 'assistant' && msg.message?.content) {
       for (const block of msg.message.content) {

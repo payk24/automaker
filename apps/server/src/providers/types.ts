@@ -34,6 +34,12 @@ export interface ExecuteOptions {
   conversationHistory?: ConversationMessage[]; // Previous messages for context
   sdkSessionId?: string; // Claude SDK session ID for resuming conversations
   settingSources?: Array<'user' | 'project' | 'local'>; // Claude filesystem settings to load
+  /**
+   * If true, the provider should run in read-only mode (no file modifications).
+   * For Cursor CLI, this omits the --force flag, making it suggest-only.
+   * Default: false (allows edits)
+   */
+  readOnly?: boolean;
 }
 
 /**

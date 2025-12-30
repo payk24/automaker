@@ -132,6 +132,7 @@ ${JSON.stringify(specOutputSchema, null, 2)}`;
       maxTurns: 250,
       allowedTools: ['Read', 'Glob', 'Grep'],
       abortController,
+      readOnly: true, // Spec generation only reads code, we write the spec ourselves
     })) {
       messageCount++;
 

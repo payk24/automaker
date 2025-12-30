@@ -132,6 +132,7 @@ IMPORTANT: Do not ask for clarification. The specification is provided above. Ge
       maxTurns: 250,
       allowedTools: ['Read', 'Glob', 'Grep'],
       abortController,
+      readOnly: true, // Feature generation only reads code, doesn't write
     })) {
       messageCount++;
 

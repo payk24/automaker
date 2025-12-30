@@ -140,11 +140,17 @@ export class CursorProvider extends CliProvider {
     // shell escaping issues when content contains $(), backticks, etc.
     const cliArgs: string[] = [
       '-p', // Print mode (non-interactive)
-      '--force', // Allow file modifications
       '--output-format',
       'stream-json',
       '--stream-partial-output', // Real-time streaming
     ];
+
+    // Only add --force if NOT in read-only mode
+    // Without --force, Cursor CLI suggests changes but doesn't apply them
+    // With --force, Cursor CLI can actually edit files
+    if (!options.readOnly) {
+      cliArgs.push('--force');
+    }
 
     // Add model if not auto
     if (model !== 'auto') {

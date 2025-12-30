@@ -371,6 +371,7 @@ export function createDescribeImageHandler(
           cwd,
           maxTurns: 1,
           allowedTools: ['Read'], // Allow Read tool so Cursor can read the image if needed
+          readOnly: true, // Image description only reads, doesn't write
         })) {
           if (msg.type === 'assistant' && msg.message?.content) {
             for (const block of msg.message.content) {
