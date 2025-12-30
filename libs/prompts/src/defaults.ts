@@ -331,40 +331,44 @@ Your task is to analyze the request and produce a structured JSON plan with:
 5. Any dependency updates needed (removed dependencies due to deletions, new dependencies for new features)
 
 Respond with ONLY a JSON object in this exact format:
+\`\`\`json
 {
-  "plan": {
-    "add": [
-      {
-        "title": "string",
-        "description": "string",
+  "changes": [
+    {
+      "type": "add",
+      "feature": {
+        "title": "Feature title",
+        "description": "Feature description",
         "category": "feature" | "bug" | "enhancement" | "refactor",
-        "dependencies": ["featureId1", "featureId2"]
-      }
-    ],
-    "update": [
-      {
-        "featureId": "string",
-        "updates": {
-          "title"?: "string",
-          "description"?: "string",
-          "category"?: "feature" | "bug" | "enhancement" | "refactor",
-          "priority"?: number,
-          "dependencies"?: ["featureId1"]
-        }
-      }
-    ],
-    "delete": ["featureId1", "featureId2"],
-    "summary": "Brief summary of all changes",
-    "dependencyUpdates": [
-      {
-        "featureId": "string",
-        "action": "remove_dependency" | "add_dependency",
-        "dependencyId": "string",
-        "reason": "string"
-      }
-    ]
-  }
+        "dependencies": ["existing-feature-id"],
+        "priority": 1
+      },
+      "reason": "Why this feature should be added"
+    },
+    {
+      "type": "update",
+      "featureId": "existing-feature-id",
+      "feature": {
+        "title": "Updated title"
+      },
+      "reason": "Why this feature should be updated"
+    },
+    {
+      "type": "delete",
+      "featureId": "feature-id-to-delete",
+      "reason": "Why this feature should be deleted"
+    }
+  ],
+  "summary": "Brief overview of all proposed changes",
+  "dependencyUpdates": [
+    {
+      "featureId": "feature-that-depended-on-deleted",
+      "removedDependencies": ["deleted-feature-id"],
+      "addedDependencies": []
+    }
+  ]
 }
+\`\`\`
 
 Important rules:
 - Only include fields that need to change in updates
