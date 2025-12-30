@@ -562,6 +562,73 @@ export class HttpApiClient implements ElectronAPI {
       error?: string;
     }> => this.post('/api/setup/cursor-config/models', { projectPath, models }),
 
+    // Cursor CLI Permissions
+    getCursorPermissions: (
+      projectPath?: string
+    ): Promise<{
+      success: boolean;
+      globalPermissions?: { allow: string[]; deny: string[] } | null;
+      projectPermissions?: { allow: string[]; deny: string[] } | null;
+      effectivePermissions?: { allow: string[]; deny: string[] } | null;
+      activeProfile?: 'strict' | 'development' | 'custom' | null;
+      hasProjectConfig?: boolean;
+      availableProfiles?: Array<{
+        id: string;
+        name: string;
+        description: string;
+        permissions: { allow: string[]; deny: string[] };
+      }>;
+      error?: string;
+    }> =>
+      this.get(
+        `/api/setup/cursor-permissions${projectPath ? `?projectPath=${encodeURIComponent(projectPath)}` : ''}`
+      ),
+
+    applyCursorPermissionProfile: (
+      profileId: 'strict' | 'development',
+      scope: 'global' | 'project',
+      projectPath?: string
+    ): Promise<{
+      success: boolean;
+      message?: string;
+      scope?: string;
+      profileId?: string;
+      error?: string;
+    }> => this.post('/api/setup/cursor-permissions/profile', { profileId, scope, projectPath }),
+
+    setCursorCustomPermissions: (
+      projectPath: string,
+      permissions: { allow: string[]; deny: string[] }
+    ): Promise<{
+      success: boolean;
+      message?: string;
+      permissions?: { allow: string[]; deny: string[] };
+      error?: string;
+    }> => this.post('/api/setup/cursor-permissions/custom', { projectPath, permissions }),
+
+    deleteCursorProjectPermissions: (
+      projectPath: string
+    ): Promise<{
+      success: boolean;
+      message?: string;
+      error?: string;
+    }> =>
+      this.httpDelete(
+        `/api/setup/cursor-permissions?projectPath=${encodeURIComponent(projectPath)}`
+      ),
+
+    getCursorExampleConfig: (
+      profileId?: 'strict' | 'development'
+    ): Promise<{
+      success: boolean;
+      profileId?: string;
+      config?: string;
+      error?: string;
+    }> =>
+      this.get(
+        `/api/setup/cursor-permissions/example${profileId ? `?profileId=${profileId}` : ''}`
+      ),
+
     onInstallProgress: (callback: (progress: unknown) => void) => {
       return this.subscribeToEvent('agent:stream', callback);
     },

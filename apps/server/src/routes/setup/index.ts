@@ -17,6 +17,11 @@ import {
   createGetCursorConfigHandler,
   createSetCursorDefaultModelHandler,
   createSetCursorModelsHandler,
+  createGetCursorPermissionsHandler,
+  createApplyPermissionProfileHandler,
+  createSetCustomPermissionsHandler,
+  createDeleteProjectPermissionsHandler,
+  createGetExampleConfigHandler,
 } from './routes/cursor-config.js';
 
 export function createSetupRoutes(): Router {
@@ -37,6 +42,13 @@ export function createSetupRoutes(): Router {
   router.get('/cursor-config', createGetCursorConfigHandler());
   router.post('/cursor-config/default-model', createSetCursorDefaultModelHandler());
   router.post('/cursor-config/models', createSetCursorModelsHandler());
+
+  // Cursor CLI Permissions routes
+  router.get('/cursor-permissions', createGetCursorPermissionsHandler());
+  router.post('/cursor-permissions/profile', createApplyPermissionProfileHandler());
+  router.post('/cursor-permissions/custom', createSetCustomPermissionsHandler());
+  router.delete('/cursor-permissions', createDeleteProjectPermissionsHandler());
+  router.get('/cursor-permissions/example', createGetExampleConfigHandler());
 
   return router;
 }
