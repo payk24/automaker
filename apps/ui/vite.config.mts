@@ -70,7 +70,19 @@ export default defineConfig(({ command }) => {
     build: {
       outDir: 'dist',
       rollupOptions: {
-        external: ['child_process', 'fs', 'path', 'crypto', 'http', 'net', 'os', 'util', 'stream', 'events', 'readline'],
+        external: [
+          'child_process',
+          'fs',
+          'path',
+          'crypto',
+          'http',
+          'net',
+          'os',
+          'util',
+          'stream',
+          'events',
+          'readline',
+        ],
       },
     },
     optimizeDeps: {
