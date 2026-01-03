@@ -4,6 +4,7 @@ import { useAppStore } from '@/store/app-store';
 import { Button } from '@/components/ui/button';
 import { PhaseModelSelector } from './phase-model-selector';
 import type { PhaseModelKey } from '@automaker/types';
+import { DEFAULT_PHASE_MODELS } from '@automaker/types';
 
 interface PhaseConfig {
   key: PhaseModelKey;
@@ -58,6 +59,11 @@ const GENERATION_TASKS: PhaseConfig[] = [
     label: 'Project Analysis',
     description: 'Analyzes project structure for suggestions',
   },
+  {
+    key: 'suggestionsModel',
+    label: 'AI Suggestions',
+    description: 'Model for feature, refactoring, security, and performance suggestions',
+  },
 ];
 
 function PhaseGroup({
@@ -83,7 +89,7 @@ function PhaseGroup({
             key={phase.key}
             label={phase.label}
             description={phase.description}
-            value={phaseModels[phase.key]}
+            value={phaseModels[phase.key] ?? DEFAULT_PHASE_MODELS[phase.key]}
             onChange={(model) => setPhaseModel(phase.key, model)}
           />
         ))}
