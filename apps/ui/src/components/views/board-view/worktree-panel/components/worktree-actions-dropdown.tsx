@@ -34,7 +34,6 @@ import { getEditorIcon } from '@/components/icons/editor-icons';
 interface WorktreeActionsDropdownProps {
   worktree: WorktreeInfo;
   isSelected: boolean;
-  defaultEditorName: string;
   aheadCount: number;
   behindCount: number;
   isPulling: boolean;
@@ -60,7 +59,6 @@ interface WorktreeActionsDropdownProps {
 export function WorktreeActionsDropdown({
   worktree,
   isSelected,
-  defaultEditorName,
   aheadCount,
   behindCount,
   isPulling,

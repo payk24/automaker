@@ -2,13 +2,12 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { getElectronAPI } from '@/lib/electron';
 import { useAppStore } from '@/store/app-store';
+import type { EditorInfo } from '@automaker/types';
 
 const logger = createLogger('AvailableEditors');
 
-export interface EditorInfo {
-  name: string;
-  command: string;
-}
+// Re-export EditorInfo for convenience
+export type { EditorInfo };
 
 export function useAvailableEditors() {
   const [editors, setEditors] = useState<EditorInfo[]>([]);

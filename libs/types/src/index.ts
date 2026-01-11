@@ -204,6 +204,9 @@ export type {
 // Port configuration
 export { STATIC_PORT, SERVER_PORT, RESERVED_PORTS } from './ports.js';
 
+// Editor types
+export type { EditorInfo } from './editor.js';
+
 // Ideation types
 export type {
   IdeaCategory,

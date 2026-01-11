@@ -9,7 +9,6 @@ import {
   useDevServers,
   useBranches,
   useWorktreeActions,
-  useDefaultEditor,
   useRunningFeatures,
 } from './hooks';
 import { WorktreeTab } from './components';
@@ -75,8 +74,6 @@ export function WorktreePanel({
     fetchWorktrees,
     fetchBranches,
   });
-
-  const { defaultEditorName } = useDefaultEditor();
 
   const { hasRunningFeatures } = useRunningFeatures({
     runningFeatureIds,
@@ -192,7 +189,6 @@ export function WorktreePanel({
             isActivating={isActivating}
             isDevServerRunning={isDevServerRunning(mainWorktree)}
             devServerInfo={getDevServerInfo(mainWorktree)}
-            defaultEditorName={defaultEditorName}
             branches={branches}
             filteredBranches={filteredBranches}
             branchFilter={branchFilter}
@@ -247,7 +243,6 @@ export function WorktreePanel({
                   isActivating={isActivating}
                   isDevServerRunning={isDevServerRunning(worktree)}
                   devServerInfo={getDevServerInfo(worktree)}
-                  defaultEditorName={defaultEditorName}
                   branches={branches}
                   filteredBranches={filteredBranches}
                   branchFilter={branchFilter}

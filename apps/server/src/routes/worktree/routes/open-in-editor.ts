@@ -4,18 +4,15 @@
  */
 
 import type { Request, Response } from 'express';
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import { homedir } from 'os';
+import { isAbsolute } from 'path';
+import type { EditorInfo } from '@automaker/types';
 import { getErrorMessage, logError } from '../common.js';
 
 const execAsync = promisify(exec);
-
-// Editor detection with caching
-interface EditorInfo {
-  name: string;
-  command: string;
-}
+const execFileAsync = promisify(execFile);
 
 let cachedEditor: EditorInfo | null = null;
 let cachedEditors: EditorInfo[] | null = null;
@@ -177,6 +174,21 @@ export function createGetDefaultEditorHandler() {
   };
 }
 
+/**
+ * Safely execute an editor command with a path argument
+ * Uses execFile to prevent command injection
+ */
+async function safeOpenInEditor(command: string, targetPath: string): Promise<void> {
+  // Handle 'open -a "AppPath"' style commands (macOS)
+  if (command.startsWith('open -a ')) {
+    const appPath = command.replace('open -a ', '').replace(/"/g, '');
+    await execFileAsync('open', ['-a', appPath, targetPath]);
+  } else {
+    // Simple commands like 'code', 'cursor', 'zed', etc.
+    await execFileAsync(command, [targetPath]);
+  }
+}
+
 export function createOpenInEditorHandler() {
   return async (req: Request, res: Response): Promise<void> => {
     try {
@@ -193,6 +205,15 @@ export function createOpenInEditorHandler() {
         return;
       }
 
+      // Security: Validate that worktreePath is an absolute path
+      if (!isAbsolute(worktreePath)) {
+        res.status(400).json({
+          success: false,
+          error: 'worktreePath must be an absolute path',
+        });
+        return;
+      }
+
       // Use specified editor command or detect default
       let editor: EditorInfo;
       if (editorCommand) {
@@ -205,7 +226,7 @@ export function createOpenInEditorHandler() {
       }
 
       try {
-        await execAsync(`${editor.command} "${worktreePath}"`);
+        await safeOpenInEditor(editor.command, worktreePath);
         res.json({
           success: true,
           result: {
@@ -216,21 +237,21 @@ export function createOpenInEditorHandler() {
       } catch (editorError) {
         // If the detected editor fails, try opening in default file manager as fallback
         const platform = process.platform;
-        let openCommand: string;
+        let fallbackCommand: string;
         let fallbackName: string;
 
         if (platform === 'darwin') {
-          openCommand = `open "${worktreePath}"`;
+          fallbackCommand = 'open';
           fallbackName = 'Finder';
         } else if (platform === 'win32') {
-          openCommand = `explorer "${worktreePath}"`;
+          fallbackCommand = 'explorer';
           fallbackName = 'Explorer';
         } else {
-          openCommand = `xdg-open "${worktreePath}"`;
+          fallbackCommand = 'xdg-open';
           fallbackName = 'File Manager';
         }
 
-        await execAsync(openCommand);
+        await execFileAsync(fallbackCommand, [worktreePath]);
         res.json({
           success: true,
           result: {

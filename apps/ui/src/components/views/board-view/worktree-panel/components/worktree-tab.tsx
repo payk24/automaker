@@ -17,7 +17,6 @@ interface WorktreeTabProps {
   isActivating: boolean;
   isDevServerRunning: boolean;
   devServerInfo?: DevServerInfo;
-  defaultEditorName: string;
   branches: BranchInfo[];
   filteredBranches: BranchInfo[];
   branchFilter: string;
@@ -58,7 +57,6 @@ export function WorktreeTab({
   isActivating,
   isDevServerRunning,
   devServerInfo,
-  defaultEditorName,
   branches,
   filteredBranches,
   branchFilter,
@@ -315,7 +313,6 @@ export function WorktreeTab({
       <WorktreeActionsDropdown
         worktree={worktree}
         isSelected={isSelected}
-        defaultEditorName={defaultEditorName}
         aheadCount={aheadCount}
         behindCount={behindCount}
         isPulling={isPulling}
