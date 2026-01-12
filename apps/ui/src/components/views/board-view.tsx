@@ -196,13 +196,7 @@ export function BoardView() {
   const [showMassEditDialog, setShowMassEditDialog] = useState(false);
 
   // View mode state (kanban vs list)
-  const {
-    viewMode,
-    setViewMode,
-    isListView,
-    sortConfig,
-    setSortColumn,
-  } = useListViewState();
+  const { viewMode, setViewMode, isListView, sortConfig, setSortColumn } = useListViewState();
 
   // Search filter for Kanban cards
   const [searchQuery, setSearchQuery] = useState('');
@@ -1049,7 +1043,9 @@ export function BoardView() {
   });
 
   // Build columnFeaturesMap for ListView
-  const pipelineConfig = currentProject?.path ? pipelineConfigByProject[currentProject.path] || null : null;
+  const pipelineConfig = currentProject?.path
+    ? pipelineConfigByProject[currentProject.path] || null
+    : null;
   const columnFeaturesMap = useMemo(() => {
     const columns = getColumnsWithPipeline(pipelineConfig);
     const map: Record<string, typeof hookFeatures> = {};
@@ -1317,7 +1313,13 @@ export function BoardView() {
             isSelectionMode={isSelectionMode}
             selectedFeatureIds={selectedFeatureIds}
             onToggleFeatureSelection={toggleFeatureSelection}
-            onRowClick={handleViewOutput}
+            onRowClick={(feature) => {
+              if (feature.status === 'backlog') {
+                setEditingFeature(feature);
+              } else {
+                handleViewOutput(feature);
+              }
+            }}
             className="transition-opacity duration-250"
           />
         ) : (
