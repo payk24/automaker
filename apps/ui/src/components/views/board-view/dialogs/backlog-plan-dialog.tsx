@@ -63,7 +63,7 @@ interface BacklogPlanDialogProps {
   setPendingPlanResult: (result: BacklogPlanResult | null) => void;
   isGeneratingPlan: boolean;
   setIsGeneratingPlan: (generating: boolean) => void;
-  // Branch to use for created features (defaults to main if not provided)
+  // Branch to use for created features (defaults to 'main' when applying)
   currentBranch?: string;
 }
 
@@ -170,7 +170,11 @@ export function BacklogPlanDialog({
         }) || [],
     };
 
-    const result = await api.backlogPlan.apply(projectPath, filteredPlanResult, currentBranch);
+    const result = await api.backlogPlan.apply(
+      projectPath,
+      filteredPlanResult,
+      currentBranch ?? 'main'
+    );
     if (result.success) {
       toast.success(`Applied ${result.appliedChanges?.length || 0} changes`);
       setPendingPlanResult(null);

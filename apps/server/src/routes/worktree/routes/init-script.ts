@@ -36,12 +36,22 @@ function getInitScriptPath(projectPath: string): string {
 export function createGetInitScriptHandler() {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const projectPath = req.query.projectPath as string;
+      const rawProjectPath = req.query.projectPath;
 
-      if (!projectPath) {
+      // Validate projectPath is a non-empty string (not an array or undefined)
+      if (!rawProjectPath || typeof rawProjectPath !== 'string') {
         res.status(400).json({
           success: false,
           error: 'projectPath query parameter is required',
+        });
+        return;
+      }
+
+      const projectPath = rawProjectPath.trim();
+      if (!projectPath) {
+        res.status(400).json({
+          success: false,
+          error: 'projectPath cannot be empty',
         });
         return;
       }

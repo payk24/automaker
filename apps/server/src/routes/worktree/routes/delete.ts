@@ -57,6 +57,7 @@ export function createDeleteHandler() {
       }
 
       // Optionally delete the branch
+      let branchDeleted = false;
       if (deleteBranch && branchName && branchName !== 'main' && branchName !== 'master') {
         // Validate branch name to prevent command injection
         if (!isValidBranchName(branchName)) {
@@ -64,8 +65,10 @@ export function createDeleteHandler() {
         } else {
           try {
             await execGitCommand(['branch', '-D', branchName], projectPath);
+            branchDeleted = true;
           } catch {
             // Branch deletion failed, not critical
+            logger.warn(`Failed to delete branch: ${branchName}`);
           }
         }
       }
@@ -74,7 +77,8 @@ export function createDeleteHandler() {
         success: true,
         deleted: {
           worktreePath,
-          branch: deleteBranch ? branchName : null,
+          branch: branchDeleted ? branchName : null,
+          branchDeleted,
         },
       });
     } catch (error) {
